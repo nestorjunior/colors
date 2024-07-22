@@ -117,7 +117,8 @@ const DISTANCE_THRESHOLD = 70; // Ajuste este valor conforme necessário
 
 function App() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [colors, setColors] = useState<{ rgb: string; name: string; percentage: number }[]>([]);
+  const [colors, setColors] = useState<{ rgb: string; name: string }[]>([]);
+  const [showColors, setShowColors] = useState<boolean>(false); // Estado para controle da exibição das cores
   const imgRef = useRef<HTMLImageElement | null>(null);
 
   const handleImageUpload = (file: File) => {
@@ -125,6 +126,7 @@ function App() {
     reader.onload = (e) => {
       if (e.target && typeof e.target.result === 'string') {
         setImageSrc(e.target.result);
+        setShowColors(false); // Resetar o estado de exibição das cores ao carregar uma nova imagem
       }
     };
     reader.readAsDataURL(file);
@@ -153,45 +155,15 @@ function App() {
       const namedColors = palette.map(color => {
         const rgb = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
         const name = findClosestColor(rgb);
-        return { rgb, name, percentage: 0 };
+        return { rgb, name };
       });
-      countColorOccurrences(imgElement, namedColors);
+      setColors(namedColors);
     }
   };
 
-  const countColorOccurrences = (imgElement: HTMLImageElement, namedColors: { rgb: string; name: string; percentage: number }[]) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    canvas.width = imgElement.naturalWidth;
-    canvas.height = imgElement.naturalHeight;
-    ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-
-    const colorCounts: { [key: string]: number } = {};
-    let totalPixels = 0;
-
-    for (let i = 0; i < data.length; i += 4) {
-      const rgb = `rgb(${data[i]}, ${data[i + 1]}, ${data[i + 2]})`;
-      const closestColor = findClosestColor(rgb);
-
-      if (colorCounts[closestColor]) {
-        colorCounts[closestColor]++;
-      } else {
-        colorCounts[closestColor] = 1;
-      }
-      totalPixels++;
-    }
-
-    const updatedColors = namedColors.map(color => ({
-      ...color,
-      percentage: ((colorCounts[color.name] || 0) / totalPixels) * 100,
-    }));
-
-    setColors(updatedColors);
+  const handleShowColors = () => {
+    extractColors();
+    setShowColors(true); // Exibir as cores após a extração
   };
 
   const euclideanDistance = (rgb1: [number, number, number], rgb2: [number, number, number]): number => {
@@ -256,12 +228,17 @@ function App() {
               src={imageSrc}
               alt="Uploaded"
               crossOrigin="anonymous"
-              onLoad={extractColors}
               style={{ maxWidth: '500px', maxHeight: '500px', width: '500px', height: '500px' }}
             />
+            <button
+              onClick={handleShowColors}
+              style={{ display: 'block', marginTop: '20px' }}
+            >
+              Mostrar Cores
+            </button>
           </div>
         )}
-        {colors.length > 0 && (
+        {showColors && colors.length > 0 && (
           <div>
             <h3>Cores extraídas</h3>
             <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -273,7 +250,7 @@ function App() {
                     height: '50px',
                     marginRight: '10px'
                   }}></div>
-                  <span>{color.name} - {color.percentage.toFixed(2)}%</span>
+                  <span>{color.name}</span>
                 </li>
               ))}
             </ul>
