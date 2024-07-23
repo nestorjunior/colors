@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import ColorThief from 'colorthief';
+import jsPDF from 'jspdf';
 import './App.css';
 
 const colorMap: { [key: string]: string } = {
@@ -152,11 +153,19 @@ function App() {
       const colorThief = new ColorThief();
       const imgElement = imgRef.current;
       const palette = colorThief.getPalette(imgElement, 10, 10);
-      const namedColors = palette.map(color => {
+
+      // Usar um Set para armazenar cores únicas
+      const colorSet = new Set<string>();
+      palette.forEach(color => {
         const rgb = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+        colorSet.add(rgb);
+      });
+
+      const namedColors = Array.from(colorSet).map(rgb => {
         const name = findClosestColor(rgb);
         return { rgb, name };
       });
+
       setColors(namedColors);
     }
   };
@@ -194,6 +203,36 @@ function App() {
   const parseRgb = (rgbString: string): [number, number, number] => {
     const result = rgbString.match(/\d+/g);
     return result ? [parseInt(result[0]), parseInt(result[1]), parseInt(result[2])] : [0, 0, 0];
+  };
+
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Cores Extraídas", 10, 10);
+
+    colors.forEach((color, index) => {
+      doc.setFillColor(...parseRgb(color.rgb));
+      doc.rect(10, 20 + (index * 10), 10, 10, 'F');
+      doc.text(color.name, 25, 30 + (index * 10));
+    });
+
+    doc.save("cores-extraidas.pdf");
+  };
+
+  const shareResults = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Cores Extraídas',
+        text: 'Confira as cores extraídas da imagem!',
+        url: window.location.href
+      })
+        .catch(error => console.error('Erro ao compartilhar:', error));
+    } else {
+      alert('A funcionalidade de compartilhamento não é suportada pelo seu navegador.');
+    }
+  };
+
+  const printResults = () => {
+    window.print();
   };
 
   return (
@@ -254,6 +293,17 @@ function App() {
                 </li>
               ))}
             </ul>
+            <div style={{ marginTop: '20px' }}>
+              <button onClick={downloadPDF} style={{ marginRight: '10px' }}>
+                Baixar PDF
+              </button>
+              <button onClick={shareResults} style={{ marginRight: '10px' }}>
+                Compartilhar
+              </button>
+              <button onClick={printResults}>
+                Imprimir
+              </button>
+            </div>
           </div>
         )}
       </div>
