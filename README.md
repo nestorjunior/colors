@@ -23,7 +23,7 @@ Typescript: 5.2.2
 
 Clone the repository to your local development environment: 
 ```
-https://github.com/nestorjunior/color-analyzer
+https://github.com/nestorjunior/colors
 ```
 
 Then type the command: 

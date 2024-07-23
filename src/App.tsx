@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import ColorThief from 'colorthief';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import jsPDF from 'jspdf';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
@@ -119,8 +120,8 @@ const DISTANCE_THRESHOLD = 70; // Ajuste este valor conforme necessário
 
 function App() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [colors, setColors] = useState<{ rgb: string; name: string }[]>([]);
-  const [showColors, setShowColors] = useState<boolean>(false); // Estado para controle da exibição das cores
+  const [colors, setColors] = useState<{ rgb: string; name: string; count: number }[]>([]);
+  const [showColors, setShowColors] = useState<boolean>(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
   const handleImageUpload = (file: File) => {
@@ -128,7 +129,7 @@ function App() {
     reader.onload = (e) => {
       if (e.target && typeof e.target.result === 'string') {
         setImageSrc(e.target.result);
-        setShowColors(false); // Resetar o estado de exibição das cores ao carregar uma nova imagem
+        setShowColors(false);
       }
     };
     reader.readAsDataURL(file);
@@ -155,16 +156,15 @@ function App() {
       const imgElement = imgRef.current;
       const palette = colorThief.getPalette(imgElement, 10, 10);
 
-      // Usar um Set para armazenar cores únicas
-      const colorSet = new Set<string>();
+      const colorCount: { [key: string]: number } = {};
       palette.forEach(color => {
         const rgb = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-        colorSet.add(rgb);
+        colorCount[rgb] = (colorCount[rgb] || 0) + 1;
       });
 
-      const namedColors = Array.from(colorSet).map(rgb => {
+      const namedColors = Object.keys(colorCount).map(rgb => {
         const name = findClosestColor(rgb);
-        return { rgb, name };
+        return { rgb, name, count: colorCount[rgb] };
       });
 
       setColors(namedColors);
@@ -173,7 +173,7 @@ function App() {
 
   const handleShowColors = () => {
     extractColors();
-    setShowColors(true); // Exibir as cores após a extração
+    setShowColors(true);
   };
 
   const euclideanDistance = (rgb1: [number, number, number], rgb2: [number, number, number]): number => {
@@ -278,23 +278,19 @@ function App() {
         )}
         {showColors && colors.length > 0 && (
           <div className="mt-4">
-            <h3>Cores extraídas</h3>
-            <table className="table table-bordered">
-              <thead>
-                <tr>
-                  <th scope="col">Cor</th>
-                  <th scope="col">Nome</th>
-                </tr>
-              </thead>
-              <tbody>
-                {colors.map((color, index) => (
-                  <tr key={index}>
-                    <td style={{ backgroundColor: color.rgb, width: '50px', height: '50px' }}></td>
-                    <td>{color.name}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={colors}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="count" fill="#8884d8">
+                  {colors.map((color, index) => (
+                    <Cell key={`cell-${index}`} fill={color.rgb} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
             <div className="mt-3">
               <button onClick={downloadPDF} className="btn btn-secondary me-2">
                 Baixar PDF
