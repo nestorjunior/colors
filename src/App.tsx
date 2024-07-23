@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import ColorThief from 'colorthief';
 import jsPDF from 'jspdf';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
 const colorMap: { [key: string]: string } = {
@@ -237,70 +238,70 @@ function App() {
 
   return (
     <>
-      <div>
-        <h2>Muralize</h2>
+      <div className="container">
+        <h2 className="my-4">Muralize</h2>
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleImageDrop}
-          style={{
-            border: '2px dashed #ccc',
-            padding: '20px',
-            textAlign: 'center',
-            marginTop: '20px'
-          }}
+          className="upload-area border-dashed p-4 text-center"
         >
           <input
             type="file"
             accept="image/*"
             onChange={handleFileChange}
-            style={{ display: 'none' }}
+            className="d-none"
             id="fileInput"
           />
-          <label htmlFor="fileInput" style={{ cursor: 'pointer' }}>
+          <label htmlFor="fileInput" className="upload-label">
             Arraste e solte a imagem aqui ou clique para fazer upload
           </label>
         </div>
         {imageSrc && (
-          <div style={{ marginTop: '20px' }}>
+          <div className="mt-4 text-center">
             <img
               ref={imgRef}
               src={imageSrc}
               alt="Uploaded"
               crossOrigin="anonymous"
-              style={{ maxWidth: '500px', maxHeight: '500px', width: '500px', height: '500px' }}
+              className="img-fluid"
+              style={{ maxWidth: '500px', maxHeight: '500px' }}
             />
-            <button
-              onClick={handleShowColors}
-              style={{ display: 'block', marginTop: '20px' }}
-            >
-              Mostrar Cores
-            </button>
+            <div className="mt-3">
+              <button
+                onClick={handleShowColors}
+                className="btn btn-success"
+              >
+                Mostrar Cores
+              </button>
+            </div>
           </div>
         )}
         {showColors && colors.length > 0 && (
-          <div>
+          <div className="mt-4">
             <h3>Cores extraídas</h3>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+            <ul className="list-unstyled">
               {colors.map((color, index) => (
-                <li key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                  <div style={{
-                    backgroundColor: color.rgb,
-                    width: '50px',
-                    height: '50px',
-                    marginRight: '10px'
-                  }}></div>
+                <li key={index} className="d-flex align-items-center mb-2">
+                  <div
+                    style={{
+                      backgroundColor: color.rgb,
+                      width: '50px',
+                      height: '50px',
+                      marginRight: '10px'
+                    }}
+                  ></div>
                   <span>{color.name}</span>
                 </li>
               ))}
             </ul>
-            <div style={{ marginTop: '20px' }}>
-              <button onClick={downloadPDF} style={{ marginRight: '10px' }}>
+            <div className="mt-3">
+              <button onClick={downloadPDF} className="btn btn-secondary me-2">
                 Baixar PDF
               </button>
-              <button onClick={shareResults} style={{ marginRight: '10px' }}>
+              <button onClick={shareResults} className="btn btn-info me-2">
                 Compartilhar
               </button>
-              <button onClick={printResults}>
+              <button onClick={printResults} className="btn btn-danger">
                 Imprimir
               </button>
             </div>
