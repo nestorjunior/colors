@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import ColorThief from 'colorthief';
+import quantize from 'quantize';
 import jsPDF from 'jspdf';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
@@ -164,55 +165,75 @@ function App() {
     }
   }, [imageSrc]);
 
+  type RGB = [number, number, number];
+
   const extractColors = () => {
     if (imgRef.current && canvasRef.current) {
-      const colorThief = new ColorThief();
       const imgElement = imgRef.current;
-
-      // Configurar canvas para a extração de pixels
-      const ctx = canvasRef.current.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(imgElement, 0, 0, imgElement.width, imgElement.height);
-      }
-
-      // Extrair a paleta de cores da imagem
-      const palette = colorThief.getPalette(imgElement, 10, 10);
-
-      // Mapear o número de pixels para cada cor extraída
-      const pixelCounts = new Map<string, number>();
-      let totalPixels = 0;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
 
       if (ctx) {
-        for (let y = 0; y < imgElement.height; y++) {
-          for (let x = 0; x < imgElement.width; x++) {
-            const pixelData = ctx.getImageData(x, y, 1, 1).data;
-            const rgb = `rgb(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]})`;
+        canvas.width = imgElement.width;
+        canvas.height = imgElement.height;
+        ctx.drawImage(imgElement, 0, 0);
 
-            // Encontrar a cor mais próxima da paleta
-            const closestColor = findClosestColor(rgb);
-            pixelCounts.set(
-              closestColor,
-              (pixelCounts.get(closestColor) || 0) + 1
-            );
-            totalPixels++;
-          }
+        // Obter todos os pixels da imagem
+        const pixelData = ctx.getImageData(0, 0, imgElement.width, imgElement.height).data;
+        const arrayOfPixels: RGB[] = [];
+
+        for (let i = 0; i < pixelData.length; i += 4) {
+          const rgb: RGB = [pixelData[i], pixelData[i + 1], pixelData[i + 2]];
+          arrayOfPixels.push(rgb);
         }
+
+        const maximumColorCount = 10; // Número máximo de cores na paleta
+        const colorMap = quantize(arrayOfPixels, maximumColorCount);
+        const palette = colorMap.palette(); // Obtém a paleta reduzida
+
+        const colorCounts = new Map<string, number>();
+        let totalPixels = arrayOfPixels.length;
+
+        // Função para encontrar a cor mais próxima na paleta
+        const findClosestColor = (color: RGB): RGB => {
+          return palette.reduce((closest, current) => {
+            const distCurrent = getColorDistance(color, current);
+            const distClosest = getColorDistance(color, closest);
+            return distCurrent < distClosest ? current : closest;
+          }, palette[0]);
+        };
+
+        // Função para calcular a distância entre duas cores
+        const getColorDistance = (c1: RGB, c2: RGB): number => {
+          const rDiff = c1[0] - c2[0];
+          const gDiff = c1[1] - c2[1];
+          const bDiff = c1[2] - c2[2];
+          return Math.sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
+        };
+
+        arrayOfPixels.forEach(pixel => {
+          const reducedColor = findClosestColor(pixel);
+          const colorKey = `rgb(${reducedColor[0]}, ${reducedColor[1]}, ${reducedColor[2]})`;
+          colorCounts.set(colorKey, (colorCounts.get(colorKey) || 0) + 1);
+        });
+
+        const colorList = Array.from(colorCounts.entries())
+          .map(([color, count]) => {
+            const rgb = color.match(/\d+/g)?.map(Number) as RGB;
+            return {
+              rgb: `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`,
+              name: color, // Nome da cor é a string RGB
+              percentage: ((count / totalPixels) * 100).toFixed(2),
+            };
+          })
+          .filter(color => parseFloat(color.percentage) >= 1) // Filtra cores com menos de 1%
+          .sort((a, b) => parseFloat(b.percentage) - parseFloat(a.percentage)); // Ordena por porcentagem em ordem decrescente
+
+        // Seleciona as 10 principais cores
+        const topColors: { rgb: string; name: string; percentage: string; }[] = colorList.slice(0, 10);
+
+        setColors(topColors); // Atualiza o estado com a lista de cores
       }
-
-      // Criar uma lista de cores com seus nomes e porcentagens
-      const colorList = Array.from(pixelCounts.entries())
-        .map(([name, count]) => ({
-          rgb: findRgbByName(name),
-          name,
-          percentage: ((count / totalPixels) * 100).toFixed(2),
-        }))
-        .filter(color => parseFloat(color.percentage) >= 1) // Filtra cores com menos de 1%
-        .sort((a, b) => parseFloat(b.percentage) - parseFloat(a.percentage)); // Ordena por porcentagem em ordem decrescente
-
-      // Seleciona as 6 principais cores
-      const topColors = colorList.slice(0, 10);
-
-      setColors(topColors);
     }
   };
 
