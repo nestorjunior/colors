@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import ColorThief from 'colorthief';
-import quantize from 'quantize';
 import jsPDF from 'jspdf';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
@@ -157,13 +156,11 @@ function App() {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
 
-      imgElement.onload = () => {
-        if (ctx) {
-          canvas.width = imgElement.width;
-          canvas.height = imgElement.height;
-          ctx.drawImage(imgElement, 0, 0);
-        }
-      };
+      if (ctx) {
+        canvas.width = imgElement.width;
+        canvas.height = imgElement.height;
+        ctx.drawImage(imgElement, 0, 0);
+      }
     }
   }, [imageSrc]);
 
@@ -172,15 +169,16 @@ function App() {
       const colorThief = new ColorThief();
       const imgElement = imgRef.current;
 
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+      // Configurar canvas para a extração de pixels
+      const ctx = canvasRef.current.getContext('2d');
       if (ctx) {
         ctx.drawImage(imgElement, 0, 0, imgElement.width, imgElement.height);
       }
 
+      // Extrair a paleta de cores da imagem
       const palette = colorThief.getPalette(imgElement, 10, 10);
-      const colorQuantized = quantize(palette, 16);
 
+      // Mapear o número de pixels para cada cor extraída
       const pixelCounts = new Map<string, number>();
       let totalPixels = 0;
 
@@ -190,6 +188,7 @@ function App() {
             const pixelData = ctx.getImageData(x, y, 1, 1).data;
             const rgb = `rgb(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]})`;
 
+            // Encontrar a cor mais próxima da paleta
             const closestColor = findClosestColor(rgb);
             pixelCounts.set(
               closestColor,
@@ -200,16 +199,19 @@ function App() {
         }
       }
 
+      // Criar uma lista de cores com seus nomes e porcentagens
       const colorList = Array.from(pixelCounts.entries())
         .map(([name, count]) => ({
           rgb: findRgbByName(name),
           name,
           percentage: ((count / totalPixels) * 100).toFixed(2),
         }))
-        .filter(color => parseFloat(color.percentage) >= 1)
-        .sort((a, b) => parseFloat(b.percentage) - parseFloat(a.percentage));
+        .filter(color => parseFloat(color.percentage) >= 1) // Filtra cores com menos de 1%
+        .sort((a, b) => parseFloat(b.percentage) - parseFloat(a.percentage)); // Ordena por porcentagem em ordem decrescente
 
-      const topColors = colorList.slice(0, 10);
+      // Seleciona as 6 principais cores
+      const topColors = colorList.slice(0, 7);
+
       setColors(topColors);
     }
   };
@@ -286,7 +288,7 @@ function App() {
   return (
     <>
       <div className="container">
-        <h2 className="my-4">Muralize!</h2>
+        <h2 className="my-4">Muralize</h2>
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleImageDrop}
@@ -327,39 +329,34 @@ function App() {
         {showColors && colors.length > 0 && (
           <div className="mt-4">
             <h3>Cores extraídas</h3>
-            <div className="table-responsive">
-              <table className="table table-striped table-bordered">
-                <thead>
-                  <tr>
-                    <th>Cor</th>
-                    <th>Nome</th>
-                    <th>Porcentagem</th>
+            <table className="table table-bordered">
+              <thead>
+                <tr>
+                  <th scope="col">Cor</th>
+                  <th scope="col">Nome</th>
+                  <th scope="col">Porcentagem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {colors.map((color, index) => (
+                  <tr key={index}>
+                    <td style={{ backgroundColor: color.rgb, width: '50px', height: '50px' }}></td>
+                    <td>{color.name}</td>
+                    <td>{color.percentage}%</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {colors.map((color) => (
-                    <tr key={color.rgb}>
-                      <td>
-                        <div
-                          style={{
-                            backgroundColor: color.rgb,
-                            width: '50px',
-                            height: '30px',
-                            borderRadius: '5px',
-                          }}
-                        ></div>
-                      </td>
-                      <td>{color.name}</td>
-                      <td>{color.percentage}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
             <div className="mt-3">
-              <button onClick={downloadPDF} className="btn btn-primary me-2">Baixar PDF</button>
-              <button onClick={printResults} className="btn btn-secondary me-2">Imprimir</button>
-              <button onClick={shareResults} className="btn btn-info">Compartilhar</button>
+              <button onClick={downloadPDF} className="btn btn-secondary me-2">
+                Baixar PDF
+              </button>
+              <button onClick={shareResults} className="btn btn-info me-2">
+                Compartilhar
+              </button>
+              <button onClick={printResults} className="btn btn-danger">
+                Imprimir
+              </button>
             </div>
           </div>
         )}
