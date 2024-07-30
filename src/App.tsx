@@ -115,14 +115,14 @@ const colorMap: { [key: string]: string } = {
   "rgb(75, 47, 40)": "Marron"
 };
 
-const DISTANCE_THRESHOLD = 70; // Ajuste este valor conforme necessário
+const DISTANCE_THRESHOLD = 70;
 
 function App() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [colors, setColors] = useState<{ rgb: string; name: string, percentage: string }[]>([]);
   const [showColors, setShowColors] = useState<boolean>(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null); // Referência ao canvas
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const handleImageUpload = (file: File) => {
     const reader = new FileReader();
@@ -154,7 +154,7 @@ function App() {
     if (imageSrc && imgRef.current && canvasRef.current) {
       const imgElement = imgRef.current;
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
       if (ctx) {
         canvas.width = imgElement.width;
@@ -163,6 +163,7 @@ function App() {
       }
     }
   }, [imageSrc]);
+
 
   const extractColors = () => {
     if (imgRef.current && canvasRef.current) {
