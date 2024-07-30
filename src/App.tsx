@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-//import ColorThief from 'colorthief';
 import jsPDF from 'jspdf';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
@@ -167,7 +166,6 @@ function App() {
 
   const extractColors = () => {
     if (imgRef.current && canvasRef.current) {
-      //const colorThief = new ColorThief();
       const imgElement = imgRef.current;
 
       // Configurar canvas para a extração de pixels
@@ -175,9 +173,6 @@ function App() {
       if (ctx) {
         ctx.drawImage(imgElement, 0, 0, imgElement.width, imgElement.height);
       }
-
-      // Extrair a paleta de cores da imagem
-      //const palette = colorThief.getPalette(imgElement, 10, 10);
 
       // Mapear o número de pixels para cada cor extraída
       const pixelCounts = new Map<string, number>();
