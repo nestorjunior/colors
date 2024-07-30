@@ -113,13 +113,17 @@ const colorMap: { [key: string]: string } = {
   "rgb(92, 50, 37)": "Vermelho Óxido",
   "rgb(75, 47, 40)": "Marron"
 };
-
 const DISTANCE_THRESHOLD = 70;
+const PAINT_COVERAGE_PER_M2 = 270; // em ml
+const PAINT_CAN_LITERS = 16; // capacidade da lata em litros
+const PAINT_CAN_ML = PAINT_CAN_LITERS * 1000; // capacidade da lata em ml
 
 function App() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [colors, setColors] = useState<{ rgb: string; name: string, percentage: string }[]>([]);
+  const [colors, setColors] = useState<{ rgb: string; name: string; percentage: string; cans: number }[]>([]);
   const [showColors, setShowColors] = useState<boolean>(false);
+  const [height, setHeight] = useState<number | ''>('');
+  const [width, setWidth] = useState<number | ''>('');
   const imgRef = useRef<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -163,7 +167,6 @@ function App() {
     }
   }, [imageSrc]);
 
-
   const extractColors = () => {
     if (imgRef.current && canvasRef.current) {
       const imgElement = imgRef.current;
@@ -201,6 +204,9 @@ function App() {
           rgb: findRgbByName(name),
           name,
           percentage: ((count / totalPixels) * 100).toFixed(2),
+          cans: calculatePaintCans(
+            ((count / totalPixels) * 100) / 100 * (width as number) * (height as number)
+          )
         }))
         .filter(color => parseFloat(color.percentage) >= 1) // Filtra cores com menos de 1%
         .sort((a, b) => parseFloat(b.percentage) - parseFloat(a.percentage)); // Ordena por porcentagem em ordem decrescente
@@ -249,6 +255,13 @@ function App() {
       Math.pow(rgb1[1] - rgb2[1], 2) +
       Math.pow(rgb1[2] - rgb2[2], 2)
     );
+  };
+
+  const calculatePaintCans = (area: number): number => {
+    // Calcula a quantidade total de tinta necessária
+    const totalPaintNeededMl = area * PAINT_COVERAGE_PER_M2;
+    // Calcula a quantidade total de latas necessárias
+    return totalPaintNeededMl / PAINT_CAN_ML;
   };
 
   const downloadPDF = () => {
@@ -313,39 +326,64 @@ function App() {
             />
             <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
             <div className="mt-3">
+              <div className="d-flex justify-content-between mb-2">
+                <input
+                  type="number"
+                  value={height}
+                  onChange={(e) => setHeight(Number(e.target.value))}
+                  placeholder="Altura em m²"
+                  className="form-control me-2"
+                />
+                <input
+                  type="number"
+                  value={width}
+                  onChange={(e) => setWidth(Number(e.target.value))}
+                  placeholder="Largura em m²"
+                  className="form-control"
+                />
+              </div>
               <button
                 onClick={handleShowColors}
-                className="btn btn-secondary"
+                className="btn btn-primary"
               >
-                Mostrar Cores
+                Extrair Cores
               </button>
             </div>
-          </div>
-        )}
-        {showColors && colors.length > 0 && (
-          <div className="mt-4">
-            <h3>Cores extraídas</h3>
-            <table className="table table-bordered">
-              <thead>
-                <tr>
-                  <th scope="col">Cor</th>
-                  <th scope="col">Nome</th>
-                  <th scope="col">Porcentagem</th>
-                </tr>
-              </thead>
-              <tbody>
-                {colors.map((color, index) => (
-                  <tr key={index}>
-                    <td style={{ backgroundColor: color.rgb, width: '50px', height: '50px' }}></td>
-                    <td>{color.name}</td>
-                    <td>{color.percentage}%</td>
+
+            {showColors && colors.length > 0 && (
+              <table className="table table-striped mt-4">
+                <thead>
+                  <tr>
+                    <th>Cor</th>
+                    <th>Nome</th>
+                    <th>Porcentagem</th>
+                    <th>Latas de Tinta</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="mt-3">
+                </thead>
+                <tbody>
+                  {colors.map((color, index) => (
+                    <tr key={index}>
+                      <td>
+                        <div
+                          style={{
+                            backgroundColor: color.rgb,
+                            width: '50px',
+                            height: '20px',
+                            borderRadius: '5px'
+                          }}
+                        ></div>
+                      </td>
+                      <td>{color.name}</td>
+                      <td>{color.percentage}%</td>
+                      <td>{color.cans.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <div className="mt-4">
               <button onClick={downloadPDF} className="btn btn-secondary me-2">
-                Baixar PDF
+                Download PDF
               </button>
               <button onClick={shareResults} className="btn btn-secondary me-2">
                 Compartilhar
