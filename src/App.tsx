@@ -315,7 +315,7 @@ function App() {
             <div className="mt-3">
               <button
                 onClick={handleShowColors}
-                className="btn btn-success"
+                className="btn btn-secondary"
               >
                 Mostrar Cores
               </button>
@@ -347,10 +347,10 @@ function App() {
               <button onClick={downloadPDF} className="btn btn-secondary me-2">
                 Baixar PDF
               </button>
-              <button onClick={shareResults} className="btn btn-info me-2">
+              <button onClick={shareResults} className="btn btn-secondary me-2">
                 Compartilhar
               </button>
-              <button onClick={printResults} className="btn btn-danger">
+              <button onClick={printResults} className="btn btn-secondary">
                 Imprimir
               </button>
             </div>
