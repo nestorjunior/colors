@@ -113,7 +113,7 @@ const colorMap: { [key: string]: string } = {
   "rgb(92, 50, 37)": "Vermelho Óxido",
   "rgb(75, 47, 40)": "Marron"
 };
-const DISTANCE_THRESHOLD = 70;
+const DISTANCE_THRESHOLD = 70; // distância mínima de pixels das cores
 const PAINT_COVERAGE_PER_M2 = 270; // em ml
 const PAINT_CAN_LITERS = 16; // capacidade da lata em litros
 const PAINT_CAN_ML = PAINT_CAN_LITERS * 1000; // capacidade da lata em ml
@@ -212,7 +212,7 @@ function App() {
         .sort((a, b) => parseFloat(b.percentage) - parseFloat(a.percentage)); // Ordena por porcentagem em ordem decrescente
 
       // Seleciona as 6 principais cores
-      const topColors = colorList.slice(0, 7);
+      const topColors = colorList.slice(0, 6);
 
       setColors(topColors);
     }
