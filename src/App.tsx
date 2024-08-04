@@ -115,9 +115,6 @@ const colorMap: { [key: string]: string } = {
 };
 
 const DISTANCE_THRESHOLD = 70; // distância mínima de pixels das cores
-const PAINT_COVERAGE_PER_M2 = 270; // em ml
-const PAINT_CAN_LITERS = 16; // capacidade da lata em litros
-const PAINT_CAN_ML = PAINT_CAN_LITERS * 1000; // capacidade da lata em ml
 
 function App() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
