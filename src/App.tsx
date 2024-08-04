@@ -113,6 +113,7 @@ const colorMap: { [key: string]: string } = {
   "rgb(92, 50, 37)": "Vermelho Óxido",
   "rgb(75, 47, 40)": "Marron"
 };
+
 const DISTANCE_THRESHOLD = 70; // distância mínima de pixels das cores
 const PAINT_COVERAGE_PER_M2 = 270; // em ml
 const PAINT_CAN_LITERS = 16; // capacidade da lata em litros
@@ -120,7 +121,7 @@ const PAINT_CAN_ML = PAINT_CAN_LITERS * 1000; // capacidade da lata em ml
 
 function App() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [colors, setColors] = useState<{ rgb: string; name: string; percentage: string; cans: number }[]>([]);
+  const [colors, setColors] = useState<{ rgb: string; name: string; area: string }[]>([]);
   const [showColors, setShowColors] = useState<boolean>(false);
   const [height, setHeight] = useState<number | ''>('');
   const [width, setWidth] = useState<number | ''>('');
@@ -151,6 +152,14 @@ function App() {
     if (file) {
       handleImageUpload(file);
     }
+  };
+
+  const clearImage = () => {
+    setImageSrc(null);
+    setColors([]);
+    setShowColors(false);
+    setHeight('');
+    setWidth('');
   };
 
   useEffect(() => {
@@ -198,18 +207,17 @@ function App() {
         }
       }
 
-      // Criar uma lista de cores com seus nomes e porcentagens
+      // Criar uma lista de cores com seus nomes e áreas
       const colorList = Array.from(pixelCounts.entries())
         .map(([name, count]) => ({
           rgb: findRgbByName(name),
           name,
-          percentage: ((count / totalPixels) * 100).toFixed(2),
-          cans: calculatePaintCans(
-            ((count / totalPixels) * 100) / 100 * (width as number) * (height as number)
-          )
+          area: (
+            ((count / totalPixels) * (width as number) * (height as number))
+          ).toFixed(2),
         }))
-        .filter(color => parseFloat(color.percentage) >= 1) // Filtra cores com menos de 1%
-        .sort((a, b) => parseFloat(b.percentage) - parseFloat(a.percentage)); // Ordena por porcentagem em ordem decrescente
+        .filter(color => parseFloat(color.area) >= 1) // Filtra cores com menos de 1m²
+        .sort((a, b) => parseFloat(b.area) - parseFloat(a.area)); // Ordena por área em ordem decrescente
 
       // Seleciona as 6 principais cores
       const topColors = colorList.slice(0, 6);
@@ -257,13 +265,6 @@ function App() {
     );
   };
 
-  const calculatePaintCans = (area: number): number => {
-    // Calcula a quantidade total de tinta necessária
-    const totalPaintNeededMl = area * PAINT_COVERAGE_PER_M2;
-    // Calcula a quantidade total de latas necessárias
-    return totalPaintNeededMl / PAINT_CAN_ML;
-  };
-
   const downloadPDF = () => {
     const doc = new jsPDF();
     doc.text("Cores Extraídas", 10, 10);
@@ -271,7 +272,7 @@ function App() {
     colors.forEach((color, index) => {
       doc.setFillColor(...parseRgb(color.rgb));
       doc.rect(10, 20 + (index * 10), 10, 10, 'F');
-      doc.text(`${color.name} (${color.percentage}%)`, 25, 30 + (index * 10));
+      doc.text(`${color.name} (${color.area} m²)`, 25, 30 + (index * 10));
     });
 
     doc.save("cores-extraidas.pdf");
@@ -326,71 +327,58 @@ function App() {
             />
             <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
             <div className="mt-3">
-              <div className="d-flex justify-content-between mb-2">
+              <div className="d-flex justify-content-center align-items-center">
+                <label htmlFor="height" className="me-2">Altura (m):</label>
                 <input
                   type="number"
+                  id="height"
                   value={height}
                   onChange={(e) => setHeight(Number(e.target.value))}
-                  placeholder="Altura em m²"
-                  className="form-control me-2"
+                  className="form-control me-3"
+                  style={{ width: '100px' }}
                 />
+                <label htmlFor="width" className="me-2">Largura (m):</label>
                 <input
                   type="number"
+                  id="width"
                   value={width}
                   onChange={(e) => setWidth(Number(e.target.value))}
-                  placeholder="Largura em m²"
                   className="form-control"
+                  style={{ width: '100px' }}
                 />
               </div>
-              <button
-                onClick={handleShowColors}
-                className="btn btn-primary"
-              >
-                Extrair Cores
-              </button>
+              <button onClick={handleShowColors} className="btn btn-primary mt-3">Extrair Cores</button>
+              <button onClick={clearImage} className="btn btn-primary mt-3 ms-3">Limpar</button>
             </div>
-
-            {showColors && colors.length > 0 && (
-              <table className="table table-striped mt-4">
-                <thead>
-                  <tr>
-                    <th>Cor</th>
-                    <th>Nome</th>
-                    <th>Porcentagem</th>
-                    <th>Latas de Tinta</th>
+          </div>
+        )}
+        {showColors && colors.length > 0 && (
+          <div className="mt-4">
+            <h4>Cores Extraídas:</h4>
+            <table className="table table-bordered">
+              <thead>
+                <tr>
+                  <th scope="col">Cor</th>
+                  <th scope="col">Nome</th>
+                  <th scope="col">Área (m²)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {colors.map((color, index) => (
+                  <tr key={index}>
+                    <td>
+                      <div className="color-preview" style={{ backgroundColor: color.rgb, width: '50px', height: '50px' }}></div>
+                    </td>
+                    <td>{color.name}</td>
+                    <td>{color.area}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {colors.map((color, index) => (
-                    <tr key={index}>
-                      <td>
-                        <div
-                          style={{
-                            backgroundColor: color.rgb,
-                            width: '50px',
-                            height: '20px',
-                            borderRadius: '5px'
-                          }}
-                        ></div>
-                      </td>
-                      <td>{color.name}</td>
-                      <td>{color.percentage}%</td>
-                      <td>{color.cans.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-            <div className="mt-4">
-              <button onClick={downloadPDF} className="btn btn-secondary me-2">
-                Download PDF
-              </button>
-              <button onClick={shareResults} className="btn btn-secondary me-2">
-                Compartilhar
-              </button>
-              <button onClick={printResults} className="btn btn-secondary">
-                Imprimir
-              </button>
+                ))}
+              </tbody>
+            </table>
+            <div className="mt-3">
+              <button onClick={downloadPDF} className="btn btn-secondary me-2">Download PDF</button>
+              <button onClick={shareResults} className="btn btn-secondary me-2">Compartilhar</button>
+              <button onClick={printResults} className="btn btn-secondary">Imprimir</button>
             </div>
           </div>
         )}
