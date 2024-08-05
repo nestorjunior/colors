@@ -332,7 +332,7 @@ function App() {
             <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
             <div className="mt-3">
               <div className="d-flex justify-content-center align-items-center">
-                <label htmlFor="height" className="me-2">Altura (m):</label>
+                <label htmlFor="height" className="me-2">Altura (m²):</label>
                 <input
                   type="number"
                   id="height"
@@ -341,7 +341,7 @@ function App() {
                   className="form-control me-3"
                   style={{ width: '100px' }}
                 />
-                <label htmlFor="width" className="me-2">Largura (m):</label>
+                <label htmlFor="width" className="me-2">Largura (m²):</label>
                 <input
                   type="number"
                   id="width"
